@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory  # noqa: send_from_directory used in local dev
 import requests as req
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -270,9 +270,10 @@ def search():
     return jsonify({"count": len(results), "results": results})
 
 
-# Local dev: serve static files from public/
-PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public")
-if os.path.exists(PUBLIC_DIR):
+# Local dev only: Vercel sets VERCEL=1 automatically, so these routes are skipped in production
+if not os.environ.get("VERCEL"):
+    PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public")
+
     @app.route("/")
     def index_html():
         return send_from_directory(PUBLIC_DIR, "index.html")
