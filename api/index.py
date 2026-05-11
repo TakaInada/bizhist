@@ -2,12 +2,15 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
-from flask import Flask, request, jsonify, send_from_directory  # noqa: send_from_directory used in local dev
+from flask import Flask, request, jsonify
 import requests as req
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-app = Flask(__name__)
+# public/ is accessible from the Lambda at /var/task/public/
+PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public")
+
+app = Flask(__name__, static_folder=PUBLIC_DIR, static_url_path="")
 
 JSTAGE_URL  = "https://api.jstage.jst.go.jp/searchapi/do"
 CINII_URL   = "https://cir.nii.ac.jp/opensearch/articles"
@@ -270,17 +273,9 @@ def search():
     return jsonify({"count": len(results), "results": results})
 
 
-# Local dev only: Vercel sets VERCEL=1 automatically, so these routes are skipped in production
-if not os.environ.get("VERCEL"):
-    PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public")
-
-    @app.route("/")
-    def index_html():
-        return send_from_directory(PUBLIC_DIR, "index.html")
-
-    @app.route("/<path:path>")
-    def static_file(path):
-        return send_from_directory(PUBLIC_DIR, path)
+@app.route("/")
+def index_html():
+    return app.send_static_file("index.html")
 
 
 if __name__ == "__main__":
